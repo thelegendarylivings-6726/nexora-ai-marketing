@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const prisma = new PrismaClient();
 
@@ -40,6 +41,9 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    if (!process.env.AUTH_SECRET) return res.status(500).json({ error: 'Authentication is not configured.' });
+    const token = jwt.sign({ sub: user.id, email: user.email }, process.env.AUTH_SECRET, { expiresIn: '8h' });
+    res.setHeader('Set-Cookie', `nexora_session=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=28800`);
     return res.status(200).json({
       user: {
         id: user.id,
