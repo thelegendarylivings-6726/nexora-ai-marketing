@@ -14,10 +14,9 @@
     return;
   }
 
-  sessionStorage.setItem('nexoraUser', JSON.stringify(data.user));
   window.location.href = 'dashboard.html';
 } catch (error) {
   alert('Sign in is temporarily unavailable.');
 } finally {go.disabled=false;go.textContent='SIGN IN';}
 
-return;}if(!n){alert('Enter business/name.');return}go.disabled=true;go.textContent='CREATING...';try{let r=await fetch('/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,email:e,password:p})});let d=await r.json();if(!r.ok){alert(d.error||'Signup failed');return}sessionStorage.setItem('nexoraUser',JSON.stringify(d.user));alert('Account created successfully.');location.href='dashboard.html'}catch(e){alert('Signup is temporarily unavailable.')}finally{go.disabled=false;go.textContent='CREATE ACCOUNT'}}if(sessionStorage.getItem('nexoraUser')){location.replace('dashboard.html');}</script></body></html>
+return;}if(!n){alert('Enter business/name.');return}go.disabled=true;go.textContent='CREATING...';try{let r=await fetch('/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,email:e,password:p})});let d=await r.json();if(!r.ok){alert(d.error||'Signup failed');return}alert('Account created successfully. Please sign in.');mode('login');passwordInput.value=''}catch(e){alert('Signup is temporarily unavailable.')}finally{go.disabled=false;go.textContent='CREATE ACCOUNT'}}fetch('/api/session',{credentials:'same-origin'}).then(r=>{if(r.ok) location.replace('dashboard.html')}).catch(()=>{});</script></body></html>
