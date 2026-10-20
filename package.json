@@ -1,1 +1,15 @@
-{"name":"nexora-ai-marketing","private":true,"version":"1.0.0","dependencies":{"@prisma/client":"^6.17.1","bcryptjs":"^3.0.2"},"devDependencies":{"prisma":"^6.17.1"},"scripts":{"postinstall":"postinstall":"prisma generate && prisma db push"}}
+{
+  "name": "nexora-ai-marketing",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@prisma/client": "^6.17.1",
+    "bcryptjs": "^3.0.2"
+  },
+  "devDependencies": {
+    "prisma": "^6.17.1"
+  },
+  "scripts": {
+    "postinstall": "prisma generate && prisma db push"
+  }
+}
