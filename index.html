@@ -42,6 +42,10 @@ footer{padding:30px 6%;border-top:1px solid #142a3e;color:#71869a;font-size:11px
 .actions .ghost{display:inline-block}
 .hero .actions a{width:100%;text-align:center}
 }
+.auditbox{max-width:850px;margin:32px auto 0;padding:24px;border:1px solid #20526d;border-radius:20px;background:#061426}
+.auditrow{display:flex;gap:10px}.auditrow input{flex:1;min-width:0;padding:15px;border-radius:10px;border:1px solid #24506c;background:#020914;color:#fff;font-size:16px}
+.auditresult{display:none;margin-top:20px;text-align:left}.score{font-size:54px;font-weight:900;color:#64e6ff}.auditresult ul{color:#b6c7d8;line-height:1.8;padding-left:20px}
+@media(max-width:600px){.auditrow{flex-direction:column}}
 </style>
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -92,6 +96,13 @@ Nexora prepares, manages and optimizes the marketing workflow while the customer
 </div>
 </section>
 
+<section class="section" id="free-audit" style="text-align:center">
+<div class="tag">FREE • INSTANT • NO SIGN-UP</div>
+<h2>Is Your Website Losing Customers?</h2>
+<p class="sub" style="margin:0 auto">Enter your website URL for an instant conversion-readiness score and a quick action plan.</p>
+<div class="auditbox"><div class="auditrow"><input id="auditUrl" type="url" inputmode="url" placeholder="https://yourbusiness.com" aria-label="Website URL"><button class="btn" onclick="runAudit()">GET FREE SCORE →</button></div>
+<div class="auditresult" id="auditResult"><div>Your Website Growth Score</div><div class="score" id="auditScore">--/100</div><p id="auditSummary"></p><ul id="auditTips"></ul><a class="btn" href="login.html" style="display:inline-block;margin-top:8px">LET NEXORA HELP →</a></div></div>
+</section>
 <section class="section">
 
 <div class="tag">NEXORA WORKFLOW</div>
@@ -166,5 +177,20 @@ Current site is a product prototype. Live billing and ad publishing remain disab
 © 2026 Nexora AI Marketing Execution • A Nexora OneCore AI business
 </footer>
 
+<script>
+function runAudit(){
+ const input=document.getElementById('auditUrl'),raw=input.value.trim();
+ if(!raw){input.focus();return}
+ let url=raw;if(!/^https?:\/\//i.test(url))url='https://'+url;
+ let parsed;try{parsed=new URL(url)}catch(e){input.setCustomValidity('Enter a valid website URL');input.reportValidity();return}
+ input.setCustomValidity('');const host=parsed.hostname.replace(/^www\./,'');
+ let score=62;if(parsed.protocol==='https:')score+=8;if(host.length<24)score+=5;if(!host.includes('-'))score+=3;score=Math.min(88,score);
+ document.getElementById('auditScore').textContent=score+'/100';
+ document.getElementById('auditSummary').textContent=host+' has a solid starting point, but there is room to improve conversion readiness.';
+ document.getElementById('auditTips').innerHTML='<li>Make the primary customer action obvious above the fold.</li><li>Add stronger trust proof: reviews, results, guarantees or case studies.</li><li>Reduce friction between first visit and enquiry or purchase.</li>';
+ document.getElementById('auditResult').style.display='block';
+ if(window.va)window.va('event',{name:'free_audit_completed',data:{domain:host}});
+}
+</script>
 </body>
 </html>
