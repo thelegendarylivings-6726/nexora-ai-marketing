@@ -26,7 +26,8 @@
  <div class="coinpanel">
   <div class="eyebrow">ACCESS & CREDITS</div><h3>Start free. Build with control.</h3>
   <p class="coinsub">Proposed access rules: 7-day trial · up to 8 hours of usage per day · 2-hour cooldown after the daily limit.</p>
-  <div class="trialbox"><strong>7 DAYS FREE</strong><div class="coinsub">Trial access · daily usage cap: 8 hours · cooldown: 2 hours after the cap</div></div>
+  <div class="trialbox"><strong>7 DAYS FREE</strong><div class="coinsub">Account-based trial status and usage are shown below when you are signed in.</div></div>
+  <div class="trialbox" id="accountStatus" aria-live="polite"><strong>Checking account…</strong><div class="coinsub">Loading your secure trial and usage status.</div></div>
   <div class="trialgrid">
    <div class="coinpack"><span>STARTER</span><b>2,000</b><span>COINS</span><button type="button" onclick="selectCoinPack(2000)">Select pack</button></div>
    <div class="coinpack"><span>BUILDER</span><b>5,000</b><span>COINS</span><button type="button" onclick="selectCoinPack(5000)">Select pack</button></div>
@@ -34,7 +35,7 @@
    <div class="coinpack"><span>PRO</span><b>20,000</b><span>COINS</span><button type="button" onclick="selectCoinPack(20000)">Select pack</button></div>
    <div class="coinpack"><span>MAX</span><b>50,000</b><span>COINS</span><button type="button" onclick="selectCoinPack(50000)">Select pack</button></div>
   </div>
-  <p class="uniqueNote" id="coinStatus" aria-live="polite">Coin packs shown as a product preview. Prices and checkout will appear after the billing system is connected.</p>
+  <p class="uniqueNote" id="coinStatus" aria-live="polite">Coin package options are not purchasable yet. Checkout and verified payment-to-coin crediting must be connected before packs can be sold.</p>
  </div>
 </section>
 <section class="builder"><div class="panel"><h2>1. Describe your website</h2><div class="field"><label for="prompt">Your website prompt</label><textarea id="prompt" placeholder="Example: Build a cinematic luxury real-estate website with a black Rolls-Royce arriving at a modern villa gate, interactive 1BHK / 2BHK / 3BHK options, 3D-inspired visuals, enquiry form and mobile layout."></textarea><div class="hint">Be specific about the audience, pages, colours, animation, features and mobile experience.</div></div>
@@ -83,7 +84,31 @@ function runLaunchCheck(){
  report.innerHTML='<strong>Quick local checklist (not a full audit)</strong><ul style="padding-left:20px;line-height:1.9">'+checks.map(x=>'<li>'+(x[1]?'✓ ':'△ ')+x[0]+'</li>').join('')+'</ul><span>△ means review manually. A pass only checks for a text pattern; it does not prove a feature is functional or secure.</span>';
 }
 
-function selectCoinPack(amount){const el=document.getElementById('coinStatus');if(el)el.textContent=amount.toLocaleString('en-US')+' coins selected. Secure checkout and server-side coin crediting still need to be connected.';}
+function selectCoinPack(amount){const el=document.getElementById('coinStatus');if(el)el.textContent=amount.toLocaleString('en-US')+' coins: checkout is not enabled yet, so no payment has been taken and no coins have been added.';}
+async function refreshAccountStatus(){
+ const box=document.getElementById('accountStatus'); if(!box)return;
+ try{
+  const r=await fetch('/api/account',{credentials:'same-origin',cache:'no-store'});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){box.innerHTML='<strong>Sign-in required</strong><div class="coinsub">'+esc(d.error||'Sign in to view account trial and usage.')+'</div>';return}
+  const trial=d.trial||{}, usage=d.usage||{};
+  const fmt=s=>{s=Math.max(0,Number(s)||0);return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m'};
+  const ends=trial.endsAt?new Date(trial.endsAt).toLocaleString():'not available';
+  const cool=usage.cooldownUntil?'Cooldown until '+new Date(usage.cooldownUntil).toLocaleString():'No active cooldown';
+  box.innerHTML='<strong>'+(trial.active?'Trial active':'Trial ended')+'</strong><div class="coinsub">Trial ends: '+esc(ends)+'<br>Today used: '+esc(fmt(usage.usedSecondsToday))+' / 8h<br>Remaining today: '+esc(fmt(usage.remainingSecondsToday))+'<br>Coin balance: '+esc(usage.coins)+'<br>'+esc(cool)+'</div>';
+ }catch(e){box.innerHTML='<strong>Account status unavailable</strong><div class="coinsub">Could not load the account service. Try again shortly.</div>'}
+}
+let usageHeartbeat=null;
+async function startUsageTracking(){
+ try{
+  const r=await fetch('/api/usage',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'start'})});
+  if(r.ok){if(usageHeartbeat)clearInterval(usageHeartbeat);usageHeartbeat=setInterval(async()=>{try{const h=await fetch('/api/usage',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'heartbeat'})});if(!h.ok){clearInterval(usageHeartbeat);usageHeartbeat=null}await refreshAccountStatus()}catch(e){}},60000)}
+  await refreshAccountStatus();
+ }catch(e){}
+}
+window.addEventListener('pagehide',()=>{if(usageHeartbeat)clearInterval(usageHeartbeat)});
+refreshAccountStatus();
+startUsageTracking();
 const $=id=>document.getElementById(id);
 function loadExample(){$('prompt').value='Create a premium real-estate website for luxury villas and apartments. Show a black luxury car arriving at a dramatic modern villa gate, cinematic night lighting, property cards for 1BHK, 2BHK, 3BHK and bungalow, enquiry form, smooth animations, dark luxury style and a mobile-friendly layout.';$('style').value='cinema';$('accent').value='#f6c76b';}
 $('refimg').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f){imageData='';return}if(f.size>1800000){$('status').textContent='Image is large; please use one under 1.8 MB.';e.target.value='';return}const reader=new FileReader();reader.onload=()=>{imageData=String(reader.result||'');$('status').textContent='Reference image ready.'};reader.readAsDataURL(f)});
