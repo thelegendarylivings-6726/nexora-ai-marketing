@@ -21,6 +21,32 @@ module.exports = async function handler(req, res) {
   if (prompt.length > 12000) return send(res, 413, { error: "Prompt is too long. Keep it under 12,000 characters." });
   if (!["auto", "cinema", "3d", "business", "store", "portfolio"].includes(style)) return send(res, 400, { error: "Choose one of the supported design styles." });
 
+  // Enforce account trial and an active, server-tracked usage session before AI generation.
+  const jwt = require("jsonwebtoken");
+  const { PrismaClient } = require("@prisma/client");
+  const prisma = global.__nexoraPrisma || new PrismaClient();
+  if (process.env.NODE_ENV !== "production") global.__nexoraPrisma = prisma;
+  const cookies = Object.fromEntries(String(req.headers.cookie || "").split(";").map(v => v.trim()).filter(Boolean).map(v => {
+    const i = v.indexOf("="); return i < 0 ? [v, ""] : [v.slice(0, i), decodeURIComponent(v.slice(i + 1))];
+  }));
+  let accountId = null;
+  try { if (cookies.nexora_session && process.env.AUTH_SECRET) accountId = jwt.verify(cookies.nexora_session, process.env.AUTH_SECRET).sub || null; } catch {}
+  if (!accountId) return send(res, 401, { error: "Sign in to use the AI builder. Your trial and daily usage are tracked on your account." });
+  try {
+    const account = await prisma.user.findUnique({ where: { id: accountId } });
+    if (!account) return send(res, 401, { error: "Account not found. Please sign in again." });
+    const now = new Date();
+    if (now.getTime() >= account.trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000) return send(res, 403, { error: "Your 7-day free trial has ended." });
+    if (account.cooldownUntil && account.cooldownUntil > now) return send(res, 429, { error: "Daily usage limit reached. Cooldown is active until " + account.cooldownUntil.toISOString() + "." });
+    const utcDate = now.toISOString().slice(0, 10);
+    const used = account.usageDate === utcDate ? account.dailyUsageSeconds : 0;
+    if (used >= 28800) return send(res, 429, { error: "Daily usage limit reached. Your 2-hour cooldown is required." });
+    if (!account.activeUsageStartedAt || now.getTime() - account.activeUsageStartedAt.getTime() > 120000) return send(res, 429, { error: "Usage session is not active. Keep Build Studio open while signed in and retry." });
+  } catch (e) {
+    console.error("Generation account check failed:", e);
+    return send(res, 503, { error: "Account and usage checks are temporarily unavailable. No generation was started." });
+  }
+
   const token = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
   if (!token) return send(res, 503, { error: "AI is not connected yet. Add AI Gateway authentication securely in Vercel project settings." });
 
