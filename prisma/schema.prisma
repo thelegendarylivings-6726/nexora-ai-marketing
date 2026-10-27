@@ -8,10 +8,16 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  name                  String
+  email                 String   @unique
+  passwordHash          String
+  trialStartedAt        DateTime @default(now())
+  coinBalance           Int      @default(0)
+  dailyUsageSeconds     Int      @default(0)
+  usageDate             String   @default("")
+  cooldownUntil         DateTime?
+  activeUsageStartedAt  DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
