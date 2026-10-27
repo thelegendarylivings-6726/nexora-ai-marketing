@@ -42,10 +42,47 @@
 <div class="field"><label for="refimg">Optional reference image</label><input type="file" id="refimg" accept="image/png,image/jpeg,image/webp"><div class="hint">In the local fallback generator, this image is embedded in the downloaded page. AI mode does not interpret uploaded reference images yet. Use images you have rights to.</div></div>
 <div class="actions"><button class="btn" id="generate" onclick="generateSite()">Generate website ↗</button><button class="btn alt" onclick="loadExample()">Load cinematic example</button></div><p id="status" class="status" aria-live="polite"></p><p class="note">AI mode sends your prompt to a secure server endpoint and asks the model to generate custom HTML. The AI provider may require account verification or available credits. If it is not configured, the built-in local generator is used instead. This tool does not yet generate real video assets, save projects to a cloud workspace, or publish your website to a public domain.</p></div>
 <div class="panel previewPanel"><div class="previewHead"><div><div class="eyebrow">LIVE SANDBOX</div><b>2. Preview your website</b></div><div class="dots"><i></i><i></i><i></i><span class="hint">Isolated preview</span></div></div><iframe class="previewFrame" id="preview" title="Generated website preview" sandbox="allow-scripts allow-forms allow-modals"></iframe><div class="actions"><button class="btn" onclick="downloadSite()">Download website .html</button><button class="btn alt" onclick="showCode()">View generated code</button><button class="btn alt" onclick="copyCode()">Copy code</button></div></div></section>
+
+ <div class="panel" style="margin-top:16px">
+  <div class="eyebrow">NEXORA DIFFERENCE</div>
+  <h3>Build for an outcome, not just a screenshot.</h3>
+  <p class="note">Choose the outcome you want your website to achieve. This adds useful context to the generation brief.</p>
+  <div class="row">
+   <div class="field"><label for="goalMode">Primary business goal</label><select id="goalMode"><option value="Generate qualified leads and enquiries">Get more leads</option><option value="Sell products with clear product details and a trustworthy shopping journey">Sell products</option><option value="Get bookings and appointment requests">Get bookings</option><option value="Explain a software product and convert visitors to signups">Promote a software product</option><option value="Showcase a premium property and capture buyer enquiries">Sell or rent property</option><option value="Present a creative portfolio and encourage contact">Show a portfolio</option></select></div>
+   <div class="field"><label for="audienceMode">Target audience</label><input id="audienceMode" placeholder="e.g. local homeowners, founders"></div>
+  </div>
+  <div class="actions"><button class="btn alt" type="button" onclick="applyBuildBrief()">Improve my prompt ↗</button><button class="btn alt" type="button" onclick="runLaunchCheck()">Check generated website</button></div>
+  <div id="launchReport" class="note" aria-live="polite" style="margin-top:12px">After generating a site, run a quick local checklist for basic HTML signals. This is not a security audit or proof that forms work.</div>
+ </div>
 <section class="below"><div class="panel"><h3>3. Generated source</h3><pre class="code" id="codeview">Your website code will appear here after generation.</pre></div><div class="panel"><h3>AI generation & what comes next</h3><p class="note">AI generation is routed through a server-side endpoint so model credentials are not exposed in browser code. Cloud project saving, real image/video generation, advanced Three.js scenes and one-click public deployment are separate integrations and are not claimed as finished.</p><p class="note">Generated output is a starting point. Test forms, accessibility, mobile layout, security and licensing before using it for real customers.</p></div></section>
 <footer>© Nexora Build Studio · Original starter layouts and code. No third-party service is represented as integrated unless explicitly connected.</footer></main>
 <script>
 let generatedHTML='';let imageData='';
+
+function applyBuildBrief(){
+ const p=document.getElementById('prompt'),g=document.getElementById('goalMode'),a=document.getElementById('audienceMode');
+ if(!p||!p.value.trim()){document.getElementById('status').textContent='First describe your website idea, then improve the prompt.';return}
+ const audience=(a&&a.value.trim())?(' Target audience: '+a.value.trim()+'.'):'';
+ const goal=g?g.value:'Create a clear business outcome';
+ const extra='\\n\\nBusiness outcome: '+goal+'.'+audience+' Include a clear primary call to action, trust signals, accessible mobile-first layout, meaningful section headings, and realistic copy tailored to this audience. Mark any non-connected forms, payments or integrations as demos rather than claiming they work.';
+ if(!p.value.includes('Business outcome:'))p.value=p.value.trim()+extra;
+ else p.value=p.value.replace(/\\n\\nBusiness outcome:[\\s\\S]*$/,'')+extra;
+ document.getElementById('status').textContent='Prompt improved with a business goal and launch requirements.';
+}
+function runLaunchCheck(){
+ const report=document.getElementById('launchReport');
+ if(!generatedHTML){report.textContent='Generate a website first, then run this checklist.';return}
+ const checks=[
+ ['HTML document',/<html[\\s>]/i.test(generatedHTML)&&/<\\/html>/i.test(generatedHTML)],
+ ['Mobile viewport',/<meta[^>]+name=["']viewport["']/i.test(generatedHTML)],
+ ['Page title',/<title>[^<]+<\\/title>/i.test(generatedHTML)],
+ ['Description',/<meta[^>]+name=["']description["']/i.test(generatedHTML)],
+ ['Forms labelled or explicitly demo-marked',!/<form\\b/i.test(generatedHTML)||/demo|connect|backend|not send|not connected/i.test(generatedHTML)],
+ ['External dependencies reviewed',!/(https?:)?\\/\\/(?!www\\.w3\\.org)[a-z0-9.-]+\\//i.test(generatedHTML)]
+ ];
+ report.innerHTML='<strong>Quick local checklist (not a full audit)</strong><ul style="padding-left:20px;line-height:1.9">'+checks.map(x=>'<li>'+(x[1]?'✓ ':'△ ')+x[0]+'</li>').join('')+'</ul><span>△ means review manually. A pass only checks for a text pattern; it does not prove a feature is functional or secure.</span>';
+}
+
 function selectCoinPack(amount){const el=document.getElementById('coinStatus');if(el)el.textContent=amount.toLocaleString('en-US')+' coins selected. Secure checkout and server-side coin crediting still need to be connected.';}
 const $=id=>document.getElementById(id);
 function loadExample(){$('prompt').value='Create a premium real-estate website for luxury villas and apartments. Show a black luxury car arriving at a dramatic modern villa gate, cinematic night lighting, property cards for 1BHK, 2BHK, 3BHK and bungalow, enquiry form, smooth animations, dark luxury style and a mobile-friendly layout.';$('style').value='cinema';$('accent').value='#f6c76b';}
