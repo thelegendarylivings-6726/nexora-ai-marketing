@@ -120,12 +120,16 @@ async function generateSite(){
  try{
   const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,style:$('style').value,accent:$('accent').value})});
   const data=await response.json().catch(()=>({}));
-  if(!response.ok||!data.html)throw new Error(data.error||'AI generation is unavailable.');
+  if(!response.ok||!data.html){const err=new Error(data.error||'AI generation is unavailable.');err.status=response.status;throw err;}
   generatedHTML=data.html;$('preview').srcdoc=generatedHTML;$('codeview').textContent=generatedHTML;$('status').textContent='AI website generated successfully. Preview, edit or download the HTML.';setTimeout(()=>$('preview').scrollIntoView({behavior:'smooth',block:'nearest'}),100);
  }catch(err){
-  generateTemplateSite();
-  if(generatedHTML)$('status').textContent='Local fallback generated. AI mode is not ready: '+(err&&err.message?err.message:'connection unavailable');
-  else $('status').textContent=err&&err.message?err.message:'Website generation failed. Please try again.';
+  if(err&&(err.status===401||err.status===403||err.status===429)){
+   $('status').textContent=err.message||'Sign-in, trial or daily usage limit prevents generation.';
+  }else{
+   generateTemplateSite();
+   if(generatedHTML)$('status').textContent='Local starter generated. AI generation is unavailable: '+(err&&err.message?err.message:'connection unavailable');
+   else $('status').textContent=err&&err.message?err.message:'Website generation failed. Please try again.';
+  }
  }finally{btn.disabled=false;btn.textContent='Generate website ↗'}
 }
 function generateTemplateSite(){const prompt=$('prompt').value.trim();if(!prompt){$('status').textContent='First write what website you want.';$('prompt').focus();return}
